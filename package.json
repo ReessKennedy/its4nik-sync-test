@@ -1,0 +1,22 @@
+{
+  "name": "outline-sync-test",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Test project for outline documentation sync",
+  "type": "module",
+  "scripts": {
+    "sync": "bash sync.sh",
+    "test-sync": "bunx @dockstat/outline-sync@latest --help"
+  },
+  "engines": {
+    "bun": ">=1.2.17"
+  },
+  "packageManager": "bun@1.2.17",
+  "keywords": [
+    "outline",
+    "sync",
+    "documentation"
+  ],
+  "author": "Reess",
+  "license": "MIT"
+}
