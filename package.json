@@ -18,5 +18,8 @@
     "documentation"
   ],
   "author": "Reess",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@dockstat/outline-sync": "^1.1.4"
+  }
 }
