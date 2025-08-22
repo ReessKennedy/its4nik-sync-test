@@ -34,6 +34,7 @@ jobs:
         env:
           OUTLINE_COLLECTION_ID: ${{ secrets.OUTLINE_COLLECTION_ID }}
           OUTLINE_API_KEY: ${{ secrets.OUTLINE_API_KEY }}
+          NODE_TLS_REJECT_UNAUTHORIZED: 0
         run: |
           bash sync.sh
           git add .

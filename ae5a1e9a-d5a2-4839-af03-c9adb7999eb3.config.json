@@ -1,0 +1,11 @@
+{
+  "id": "ae5a1e9a-d5a2-4839-af03-c9adb7999eb3",
+  "name": "Documentation",
+  "basePath": "docs",
+  "fileExtension": ".md",
+  "naming": "slug",
+  "structure": "flat",
+  "syncDirection": "bidirectional",
+  "conflictResolution": "timestamp",
+  "lastSync": null
+}
