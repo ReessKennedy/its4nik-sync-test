@@ -3854,3 +3854,526 @@ The sync process takes time because it needs to:
 
 ---
 
+_**User**_
+
+But if this is th method ... when I run this in the CLI it just hangs ... 
+
+source .env && ./sync.sh
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>The user is pointing out that when they run the command in their CLI, it just hangs.
+
+## Investigating CLI Issue
+- The user reported their CLI command `source .env && ./sync.sh` is hanging with no output.
+- Checking the terminal shows the command was executed, but it appears stuck without proceeding.</details></think>
+
+---
+
+```bash
+echo "=== Testing interactive mode ===" && source .env && export NODE_TLS_REJECT_UNAUTHORIZED=0 && export PATH="$HOME/.bun/bin:$PATH" && echo "About to run sync..." && bun outline-sync --api-key="$OUTLINE_API_KEY" --collection="$OUTLINE_COLLECTION_ID" --base-url="https://ol.surgolink.com" sync
+```
+
+---
+
+_**User**_
+
+Still hangs hre ... ... wondering if could be a cloudflare thing .. 
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>The user is right - the command is still hanging even with our SSL fix.
+
+## Investigating Command Hang
+
+- The command is still hanging despite the SSL fix, confirming the user's observation.</details></think>
+
+---
+
+```bash
+echo "=== Testing basic connectivity ===" && curl -v -k --connect-timeout 10 "https://ol.surgolink.com/api/" -H "User-Agent: Mozilla/5.0 (compatible; Bot)" 2>&1 | head -20
+```
+
+```
+
+=== Testing basic connectivity ===
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0* Host ol.surgolink.com:443 wa
+s resolved.
+
+* IPv6: (none)
+* IPv4: 67.205.146.46
+*   Trying 67.205.146.46:443...
+* Connected to ol.surgolink.com (67.205.146.46) port 443
+* ALPN: curl offers h2,http/1.1
+* (304) (OUT), TLS handshake, Client hello (1):
+} [321 bytes data]
+* (304) (IN), TLS handshake, Server hello (2):
+{ [122 bytes data]
+* (304) (IN), TLS handshake, Unknown (8):
+{ [19 bytes data]
+* (304) (IN), TLS handshake, Certificate (11):
+{ [2044 bytes data]
+* (304) (IN), TLS handshake, CERT verify (15):
+{ [78 bytes data]
+* (304) (IN), TLS handshake, Finished (20):
+{ [52 bytes data]
+```
+
+---
+
+_**User**_
+
+Okay, I ran itand that worked ...  
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>The user is saying that the curl command worked, which means the basic connectivity to their server is fine.</details></think>
+
+---
+
+_**User**_
+
+I diabaled Cloudflare proxy ... 
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>The user is saying they disabled the Cloudflare proxy.</details></think>
+
+---
+
+```bash
+echo "=== Testing sync with Cloudflare proxy disabled ===" && source .env && ./sync.sh
+```
+
+---
+
+<think><details><summary>Thought Process</summary>The command is running in the background.</details></think>
+
+---
+
+```bash
+sleep 3 && echo "=== Checking sync status ===" && ps aux | grep "bun outline-sync" | grep -v grep
+```
+
+```
+
+=== Checking sync status ===
+rkennedy          3203   0.0  0.0 34675184   2432 s033  S+   12:33PM   0:00.01 bun outline-sync --api-key= -
+-collection= --base-url=https://ol.surgolink.com sync
+
+rkennedy         99511   0.0  0.0 34675184   1188 s021  SN   12:26PM   0:00.01 bun outline-sync --api-key=ol
+_api_18brh7XGzQHohIRCgG7e8yriygbCDpuDOmvU1u --collection=ae5a1e9a-d5a2-4839-af03-c9adb7999eb3 --base-url=htt
+ps://ol.surgolink.com sync
+
+rkennedy          7920   0.0  0.0 34675184   2436 s037  S+   12:40PM   0:00.01 bun outline-sync --api-key= -
+-collection= --base-url=https://ol.surgolink.com sync
+
+```
+
+---
+
+<think><details><summary>Thought Process</summary>I can see there are now THREE processes running:
+1.</details></think>
+
+---
+
+```bash
+sleep 10 && echo "=== Monitoring new sync process ===" && ps aux | grep "bun outline-sync" | grep -v grep && echo "=== Checking for completion ===" && jobs && echo "=== Checking file changes ===" && ls -la docs/ && echo "=== Checking manifest updates ===" && cat ae5a1e9a-d5a2-4839-af03-c9adb7999eb3.pages.json
+```
+
+```
+
+=== Monitoring new sync process ===
+rkennedy         99511   0.0  0.0 34675184   1188 s021  SN   12:26PM   0:00.01 bun outline-sync --api-key=ol
+_api_18brh7XGzQHohIRCgG7e8yriygbCDpuDOmvU1u --collection=ae5a1e9a-d5a2-4839-af03-c9adb7999eb3 --base-url=htt
+ps://ol.surgolink.com sync
+
+rkennedy          7920   0.0  0.0 34675184   2436 s037  S+   12:40PM   0:00.01 bun outline-sync --api-key= -
+-collection= --base-url=https://ol.surgolink.com sync
+
+rkennedy          3203   0.0  0.0 34675184   2432 s033  S+   12:33PM   0:00.01 bun outline-sync --api-key= -
+-collection= --base-url=https://ol.surgolink.com sync
+
+=== Checking for completion ===
+[1]  + running    bun outline-sync --api-key="$OUTLINE_API_KEY"   sync > /tmp/sync_output.log 2
+=== Checking file changes ===
+total 8
+drwxr-xr-x   3 rkennedy  staff   96 Aug 22 10:54 .
+drwxr-xr-x@ 19 rkennedy  staff  608 Aug 22 12:15 ..
+-rwxr-xr-x   1 rkennedy  staff   53 Aug 22 12:34 NewFileFromLocal.md
+=== Checking manifest updates ===
+{
+  "collectionId": "ae5a1e9a-d5a2-4839-af03-c9adb7999eb3",
+  "pages": [],
+  "lastSync": null,
+  "syncStatus": "pending"
+}
+```
+
+---
+
+<think><details><summary>Thought Process</summary>The sync is still running.
+
+## Monitoring Sync Process  
+- The synchronization process is still active, involving multiple processes.</details></think>
+
+---
+
+```bash
+echo "=== Cleaning up old processes ===" && pkill -f "bun outline-sync" && sleep 2 && echo "=== Starting fresh sync ===" && source .env && ./sync.sh
+```
+
+---
+
+<think><details><summary>Thought Process</summary>I've cleaned up the old processes and started a fresh sync.</details></think>
+
+---
+
+```bash
+sleep 5 && echo "=== Checking fresh sync ===" && ps aux | grep "bun outline-sync" | grep -v grep && echo "=== Waiting for completion ===" && sleep 10 && ps aux | grep "bun outline-sync" | grep -v grep
+```
+
+---
+
+_**User**_
+
+issue might be this has to be run via bunx, now? 
+
+# Dry run first (always recommended)
+bunx @dockstat/outline-sync sync --collection="COLLECTION_UUID" --dry-run
+
+
+DOcumentation: 
+
+outline-sync — @dockstat/outline-sync
+Sync Outline (app.getoutline.com) collections ↔ Markdown in your repo. Designed for multi-collection pipelines with intelligent conflict resolution and flexible mapping.
+
+✨ Features
+Bidirectional Sync: Pull, push, or intelligent timestamp-based synchronization
+Multi-Collection Support: Handle multiple collections with --collection (repeatable)
+Smart File Organization: Folder-based storage (<slug>/README.md) with customizable mappings
+Intelligent Conflict Resolution: Whitespace/formatting-agnostic diffs with timestamp-based decisions
+Flexible Configuration: Per-collection mapping files and global configuration
+Git Integration: Uses Git commit timestamps when available (fallback to filesystem mtime)
+Safe Operations: Dry-run mode, automatic backups, and comprehensive logging
+Interactive Setup: Easy collection discovery and configuration
+🚀 Quick Start
+1. Install & Setup
+# Set your API key (recommended for security)
+export OUTLINE_API_KEY="sk_..."
+
+# Interactive setup - discovers and configures collections
+bunx @dockstat/outline-sync setup
+2. Initialize Collections
+# Bootstrap a single collection
+bunx @dockstat/outline-sync init --collection="COLLECTION_UUID"
+
+# Or multiple collections at once
+bunx @dockstat/outline-sync init \
+  --collection="collection-1-id" \
+  --collection="collection-2-id"
+3. Sync Your Content
+# Dry run first (always recommended)
+bunx @dockstat/outline-sync sync --collection="COLLECTION_UUID" --dry-run
+
+# Actual synchronization
+bunx @dockstat/outline-sync sync --collection="COLLECTION_UUID"
+
+# Or sync all configured collections
+bunx @dockstat/outline-sync sync
+📖 Installation Options
+Using bunx (Recommended)
+bunx @dockstat/outline-sync <command> [flags]
+Global Installation
+npm install -g @dockstat/outline-sync
+outline-sync <command> [flags]
+Security Note: Use OUTLINE_API_KEY=... environment variable in CI/production. The --api-key="..." flag is supported but may expose keys in process lists.
+
+🎯 Commands Reference
+Usage:
+  OUTLINE_API_KEY=... bunx @dockstat/outline-sync [command] [options]
+
+Commands:
+  setup                    Interactive setup: discover and configure collections
+  list-collections         List all available collections
+  init --collection=ID     Bootstrap collection (create configs + download content)
+  pull --collection=ID     Pull remote changes to local files
+  push --collection=ID     Push local changes to remote
+  sync --collection=ID     Intelligent bidirectional sync (default)
+
+Global Options:
+  --collection=ID          Target collection (repeatable for multiple collections)
+  --dry-run                Preview changes without executing
+  --api-key="sk_..."       Outline API key (overrides OUTLINE_API_KEY env var)
+  --base-url="https://..."  Custom Outline instance URL
+  --verbose                Enable debug logging
+  --help, -h               Show help
+
+Examples:
+  # Interactive setup
+  bunx @dockstat/outline-sync setup
+
+  # Sync multiple collections with dry-run
+  bunx @dockstat/outline-sync sync \
+    --collection="id1" --collection="id2" \
+    --dry-run
+
+  # Push changes to custom Outline instance
+  bunx @dockstat/outline-sync push \
+    --collection="my-collection" \
+    --base-url="https://outline.company.com"
+📁 Configuration Structure
+The tool uses a structured configuration approach:
+
+.config/                           # Configuration directory (customizable)
+├── outline-sync.json             # Global configuration
+├── <collection-id>.config.json   # Per-collection mapping rules
+└── <collection-id>.pages.json    # Generated page manifest
+docs/                              # Content directory (customizable)
+└── collection-name/
+    ├── page-slug/
+    │   └── README.md             # Page content
+    └── parent-page/
+        ├── README.md
+        └── child-page/
+            └── README.md
+Global Configuration (outline-sync.json)
+{
+  "collections": [
+    {
+      "id": "collection-uuid-here",
+      "name": "Documentation",
+      "configDir": ".config",
+      "saveDir": "docs/documentation",
+      "pagesFile": ".config/collection-uuid-here.pages.json",
+      "configFile": ".config/collection-uuid-here.config.json"
+    }
+  ]
+}
+Collection Configuration (<collection-id>.config.json)
+{
+  "collectionId": "collection-uuid-here",
+  "saveDir": "docs/documentation",
+  "mappings": [
+    {
+      "match": { "id": "specific-doc-id" },
+      "path": "guides/getting-started/"
+    },
+    {
+      "match": { "title": "API Reference" },
+      "path": "reference/api.md"
+    },
+    {
+      "match": { "title": "FAQ" },
+      "path": "support/"
+    }
+  ]
+}
+Page Manifest (<collection-id>.pages.json)
+Generated automatically - contains the document tree structure
+
+{
+  "collectionId": "collection-uuid-here",
+  "pages": [
+    {
+      "title": "Getting Started",
+      "file": "docs/getting-started/README.md",
+      "id": "doc-id-123",
+      "children": [
+        {
+          "title": "Installation",
+          "file": "docs/getting-started/installation/README.md",
+          "id": "doc-id-456",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+🗂️ File Organization & Mapping
+Default Behavior: Folder-Based Structure
+Each Outline document becomes a folder with README.md:
+
+Clean URLs when served
+Natural hierarchy representation
+Child documents inherit parent folders
+Example Outline Structure:
+
+Product Documentation
+├── Getting Started
+│   ├── Installation
+│   └── Configuration
+└── API Reference
+    └── Authentication
+Generated File Structure:
+
+docs/
+├── product-documentation/README.md
+├── product-documentation/getting-started/README.md
+├── product-documentation/getting-started/installation/README.md
+├── product-documentation/getting-started/configuration/README.md
+├── product-documentation/api-reference/README.md
+└── product-documentation/api-reference/authentication/README.md
+Custom Mapping Rules
+Override default paths using mapping rules in collection configuration:
+
+{
+  "mappings": [
+    {
+      "match": { "id": "doc-123" },
+      "path": "guides/setup/"
+    },
+    {
+      "match": { "title": "API Reference" },
+      "path": "reference/README.md"
+    }
+  ]
+}
+Mapping Rule Types:
+
+Directory mapping (path/to/dir/): Document becomes path/to/dir/README.md
+File mapping (path/to/file.md): Document saved as specified file
+ID matching: Exact document ID match (preferred)
+Title matching: Exact title match (fallback)
+🔄 Sync Modes & Conflict Resolution
+Sync Modes
+sync (default): Intelligent bidirectional synchronization
+
+Compares timestamps: Git commit time vs Outline updatedAt
+Newer version wins
+Ignores whitespace-only changes
+pull: Remote → Local (one-way)
+
+Outline content overwrites local files
+Creates backups of existing files
+push: Local → Remote (one-way)
+
+Local files overwrite Outline content
+No local file modifications
+Conflict Resolution Logic
+flowchart TD
+    A[Compare Content] --> B{Content Different?}
+    B -->|No| C[Skip - No Changes]
+    B -->|Yes| D[Compare Timestamps]
+    D --> E{Remote Newer?}
+    E -->|Yes| F[Pull Remote → Local]
+    E -->|No| G{Local Newer?}
+    G -->|Yes| H[Push Local → Remote]
+    G -->|No| I[Skip - Same Timestamp]
+Content Comparison
+The tool performs whitespace-agnostic comparisons:
+
+Ignores formatting differences (spaces, tabs, newlines)
+Focuses on actual content changes
+Prevents unnecessary sync operations
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>The user is now pointing out that the documentation shows the commands should be run with `bunx` instead of using a local installation.
+
+## Reviewing Documentation  
+- Found that the documentation specifies using `bunx` for running commands, not a local installation.  
+- This aligns with the user's observation about the provided documentation.</details></think>
+
+---
+
+<details><summary>Edit file: sync.sh</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -3,5 +3,5 @@
+  export PATH="$HOME/.bun/bin:$PATH"
+  export NODE_TLS_REJECT_UNAUTHORIZED=0
+- bun outline-sync \
++ bunx @dockstat/outline-sync@latest \
+      --api-key="$OUTLINE_API_KEY" \
+      --collection="$OUTLINE_COLLECTION_ID" \
+```
+
+</details>
+
+---
+
+<think><details><summary>Thought Process</summary>Good! I've updated the sync.</details></think>
+
+---
+
+Read file: undefined
+
+---
+
+<think><details><summary>Thought Process</summary>I can see the GitHub Action is using `bash sync.</details></think>
+
+---
+
+```bash
+echo "=== Testing updated sync.sh with bunx ===" && source .env && ./sync.sh
+```
+
+---
+
+<think><details><summary>Thought Process</summary>The command is running in the background.</details></think>
+
+---
+
+```bash
+sleep 5 && echo "=== Checking bunx sync status ===" && ps aux | grep "bunx" | grep -v grep && echo "=== Checking for outline-sync processes ===" && ps aux | grep "outline-sync" | grep -v grep
+```
+
+```
+
+=== Checking bunx sync status ===
+rkennedy         11255  36.9  0.1 107327104  24744 s048  R+   12:43PM   0:07.72 bun /private/tmp/bunx-501-@d
+ockstat/outline-sync@latest/node_modules/.bin/outline-sync --api-key= --collection= --base-url=https://ol.su
+rgolink.com sync
+
+=== Checking for outline-sync processes ===
+rkennedy         11255  37.0  0.1 107327104  24744 s048  R+   12:43PM   0:07.83 bun /private/tmp/bunx-501-@d
+ockstat/outline-sync@latest/node_modules/.bin/outline-sync --api-key= --collection= --base-url=https://ol.su
+rgolink.com sync
+
+rkennedy         10000  36.8  0.1 107328132  24788 s043  S+   12:41PM   0:48.17 bun /Users/Reess/Desktop/out
+line-sync-test/node_modules/.bin/outline-sync --api-key= --collection= --base-url=https://ol.surgolink.com s
+ync
+
+rkennedy         10321  36.7  0.1 107323440  24720 s022  R+   12:42PM   0:24.93 bun /Users/Reess/Desktop/out
+line-sync-test/node_modules/.bin/outline-sync sync --collection=ae5a1e9a-d5a2-4839-af03-c9adb7999eb3 --dry-r
+un
+
+rkennedy          9999   0.0  0.0 34674160   2424 s043  S+   12:41PM   0:00.01 bun outline-sync --api-key= -
+-collection= --base-url=https://ol.surgolink.com sync
+
+```
+
+---
+
+<think><details><summary>Thought Process</summary>I can see several processes running:
+
+1.</details></think>
+
+---
+
+
+
+---
+
+
+
+---
+
